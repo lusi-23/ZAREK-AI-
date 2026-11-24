@@ -3,7 +3,7 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ZAREK AI</title>
 <style>
 body {
@@ -13,13 +13,11 @@ body {
   font-family: Arial, sans-serif;
   text-align: center;
 }
-.container {
-  padding: 50px 20px;
-}
+.container { padding: 45px 20px; }
 h1 {
   color: #00c8ff;
-  font-size: 42px;
-  letter-spacing: 5px;
+  letter-spacing: 6px;
+  font-size: 38px;
 }
 .circle {
   width: 150px;
@@ -28,27 +26,100 @@ h1 {
   border-radius: 50%;
   margin: 45px auto;
   box-shadow: 0 0 30px #00c8ff;
+  animation: pulse 2s infinite;
 }
-p {
-  color: #a8c8df;
+@keyframes pulse {
+  50% { box-shadow: 0 0 55px #00c8ff; }
 }
+p { color: #a8c8df; }
 button {
   background: #00aaff;
   color: white;
   border: none;
-  padding: 15px 35px;
+  padding: 16px 30px;
   border-radius: 30px;
-  font-size: 18px;
+  font-size: 17px;
+  margin: 10px;
 }
+#status { min-height: 25px; }
 </style>
 </head>
 <body>
 <div class="container">
-  <h1>ZAREK AI</h1>
-  <div class="circle"></div>
-  <p>INTELLIGENT VOICE ASSISTANT</p>
-  <p>Estoy listo para comenzar.</p>
-  <button>ACTIVAR ZAREK</button>
+<h1>ZAREK AI</h1>
+<div class="circle"></div>
+<p>INTELLIGENT VOICE ASSISTANT</p>
+<p id="status">Sistema en espera...</p>
+<button onclick="activar()">ACTIVAR ZAREK</button>
+<p id="respuesta"></p>
 </div>
+
+<script>
+function hablar(texto) {
+  const voz = new SpeechSynthesisUtterance(texto);
+  voz.lang = "es-ES";
+  voz.rate = 0.95;
+  speechSynthesis.speak(voz);
+}
+
+function activar() {
+  const Reconocimiento =
+    window.SpeechRecognition ||
+    window.webkitSpeechRecognition;
+
+  if (!Reconocimiento) {
+    document.getElementById("status").textContent =
+      "Reconocimiento de voz no disponible en este navegador.";
+    hablar("Hola. Soy Zarek. Mi sistema de voz necesita un navegador compatible.");
+    return;
+  }
+
+  const reconocimiento = new Reconocimiento();
+  reconocimiento.lang = "es-ES";
+  reconocimiento.interimResults = false;
+
+  document.getElementById("status").textContent =
+    "ZAREK está escuchando...";
+
+  reconocimiento.onresult = function(event) {
+    const texto = event.results[0][0].transcript.toLowerCase();
+
+    document.getElementById("respuesta").textContent =
+      "Tú: " + texto;
+
+    let respuesta = "Te escucho. Todavía estoy aprendiendo.";
+
+    if (texto.includes("hola")) {
+      respuesta = "Hola. Soy Zarek. ¿En qué puedo ayudarte?";
+    } else if (texto.includes("cómo estás")) {
+      respuesta = "Funcionando al cien por ciento. ¿Y tú?";
+    } else if (texto.includes("tu nombre")) {
+      respuesta = "Mi nombre es Zarek, tu asistente inteligente.";
+    } else if (texto.includes("adiós")) {
+      respuesta = "Hasta pronto. Zarek queda en espera.";
+    }
+
+    document.getElementById("respuesta").textContent =
+      "ZAREK: " + respuesta;
+
+    document.getElementById("status").textContent =
+      "Respuesta completada.";
+
+    hablar(respuesta);
+  };
+
+  reconocimiento.onerror = function() {
+    document.getElementById("status").textContent =
+      "No pude escucharte. Inténtalo otra vez.";
+  };
+
+  reconocimiento.onend = function() {
+    document.getElementById("status").textContent =
+      "Sistema en espera...";
+  };
+
+  reconocimiento.start();
+}
+</script>
 </body>
 </html>
