@@ -5,6 +5,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ZAREK AI</title>
+
 <style>
 body {
   margin: 0;
@@ -13,12 +14,17 @@ body {
   font-family: Arial, sans-serif;
   text-align: center;
 }
-.container { padding: 45px 20px; }
+
+.container {
+  padding: 45px 20px;
+}
+
 h1 {
   color: #00c8ff;
   letter-spacing: 6px;
   font-size: 38px;
 }
+
 .circle {
   width: 150px;
   height: 150px;
@@ -28,10 +34,13 @@ h1 {
   box-shadow: 0 0 30px #00c8ff;
   animation: pulse 2s infinite;
 }
+
 @keyframes pulse {
   50% { box-shadow: 0 0 55px #00c8ff; }
 }
+
 p { color: #a8c8df; }
+
 button {
   background: #00aaff;
   color: white;
@@ -41,17 +50,24 @@ button {
   font-size: 17px;
   margin: 10px;
 }
+
 #status { min-height: 25px; }
 </style>
 </head>
+
 <body>
 <div class="container">
+
 <h1>ZAREK AI</h1>
 <div class="circle"></div>
+
 <p>INTELLIGENT VOICE ASSISTANT</p>
 <p id="status">Sistema en espera...</p>
+
 <button onclick="activar()">ACTIVAR ZAREK</button>
+
 <p id="respuesta"></p>
+
 </div>
 
 <script>
@@ -67,7 +83,7 @@ let escuchando = false;
 
 function hablar(texto) {
   if (!("speechSynthesis" in window)) {
-    estado.textContent = "Voz de respuesta no disponible.";
+    estado.textContent = "Voz no disponible.";
     return;
   }
 
@@ -82,83 +98,93 @@ function hablar(texto) {
 
 function activar() {
   if (!SpeechRecognition) {
-    estado.textContent =
-      "Este navegador no permite reconocimiento de voz.";
+    estado.textContent = "Reconocimiento de voz no disponible.";
     return;
   }
 
-  if (escuchando) {
-    estado.textContent = "ZAREK ya está escuchando.";
-    return;
-  }
-
-  reconocimiento = new SpeechRecognition();
-
-  reconocimiento.lang = "es-ES";
-  reconocimiento.continuous = false;
-  reconocimiento.interimResults = false;
-  reconocimiento.maxAlternatives = 1;
+  if (escuchando) return;
 
   respuesta.textContent = "";
   escuchando = true;
+  estado.textContent = "Preparando ZAREK...";
 
-  reconocimiento.onstart = function() {
-    estado.textContent = "ZAREK está escuchando...";
-  };
+  function iniciarEscucha() {
+    reconocimiento = new SpeechRecognition();
 
-  reconocimiento.onresult = function(event) {
-    const texto =
-      event.results[0][0].transcript.trim();
+    reconocimiento.lang = "es-ES";
+    reconocimiento.continuous = false;
+    reconocimiento.interimResults = false;
+    reconocimiento.maxAlternatives = 1;
 
-    respuesta.textContent = "Tú: " + texto;
+    reconocimiento.onstart = function() {
+      estado.textContent = "ZAREK está escuchando...";
+    };
 
-    const mensaje = texto.toLowerCase();
-    let contestacion = "Te escucho. ¿Qué necesitas?";
+    reconocimiento.onresult = function(event) {
+      const texto = event.results[0][0].transcript.trim();
+      respuesta.textContent = "Tú: " + texto;
 
-    if (mensaje.includes("hola")) {
-      contestacion =
-        "Hola. Soy Zarek. Estoy listo para ayudarte.";
-    } else if (mensaje.includes("cómo estás")) {
-      contestacion =
-        "Funcionando correctamente. ¿Qué hacemos hoy?";
-    } else if (mensaje.includes("tu nombre")) {
-      contestacion =
-        "Soy Zarek, tu asistente inteligente.";
-    } else if (mensaje.includes("adiós")) {
-      contestacion =
-        "Hasta pronto. Zarek queda en espera.";
+      const mensaje = texto.toLowerCase();
+      let contestacion = "Te escucho. ¿Qué necesitas?";
+
+      if (mensaje.includes("hola")) {
+        contestacion = "Hola. Soy Zarek. Estoy listo para ayudarte.";
+      } else if (mensaje.includes("cómo estás")) {
+        contestacion = "Funcionando correctamente. ¿Qué hacemos hoy?";
+      } else if (mensaje.includes("tu nombre")) {
+        contestacion = "Soy Zarek, tu asistente inteligente.";
+      } else if (mensaje.includes("adiós")) {
+        contestacion = "Hasta pronto. Zarek queda en espera.";
+      }
+
+      respuesta.textContent = "ZAREK: " + contestacion;
+      estado.textContent = "ZAREK respondió.";
+
+      hablar(contestacion);
+    };
+
+    reconocimiento.onerror = function(event) {
+      escuchando = false;
+      estado.textContent = "Error de voz: " + event.error;
+    };
+
+    reconocimiento.onnomatch = function() {
+      estado.textContent = "No pude reconocer tus palabras.";
+    };
+
+    reconocimiento.onend = function() {
+      escuchando = false;
+
+      if (estado.textContent === "ZAREK está escuchando...") {
+        estado.textContent = "No recibí palabras. Inténtalo otra vez.";
+      }
+    };
+
+    try {
+      reconocimiento.start();
+    } catch (error) {
+      escuchando = false;
+      estado.textContent = "No se pudo iniciar: " + error.message;
     }
-
-    respuesta.textContent = "ZAREK: " + contestacion;
-    estado.textContent = "ZAREK respondió.";
-
-    hablar(contestacion);
-  };
-
-  reconocimiento.onerror = function(event) {
-    escuchando = false;
-    estado.textContent = "Error de voz: " + event.error;
-  };
-
-  reconocimiento.onnomatch = function() {
-    estado.textContent = "No pude reconocer tus palabras.";
-  };
-
-  reconocimiento.onend = function() {
-    escuchando = false;
-
-    if (estado.textContent === "ZAREK está escuchando...") {
-      estado.textContent =
-        "No recibí palabras. Inténtalo otra vez.";
-    }
-  };
-
-  try {
-    reconocimiento.start();
-  } catch (error) {
-    escuchando = false;
-    estado.textContent =
-      "No se pudo iniciar: " + error.message;
   }
+
+  speechSynthesis.cancel();
+
+  const inicio = new SpeechSynthesisUtterance(
+    "Zarek está listo. Te escucho."
+  );
+
+  inicio.lang = "es-ES";
+  inicio.onend = iniciarEscucha;
+
+  inicio.onerror = function() {
+    escuchando = false;
+    estado.textContent = "No se pudo iniciar la voz de ZAREK.";
+  };
+
+  speechSynthesis.speak(inicio);
 }
 </script>
+
+</body>
+</html>
