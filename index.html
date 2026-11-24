@@ -55,73 +55,88 @@ button {
 </div>
 
 <script>
+const estado = document.getElementById("status");
+const respuesta = document.getElementById("respuesta");
+
+const SpeechRecognition =
+  window.SpeechRecognition ||
+  window.webkitSpeechRecognition;
+
+let reconocimiento = null;
+let escuchando = false;
+
 function hablar(texto) {
+  if (!("speechSynthesis" in window)) {
+    estado.textContent = "Voz de respuesta no disponible.";
+    return;
+  }
+
   speechSynthesis.cancel();
 
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-ES";
   voz.rate = 0.95;
+
   speechSynthesis.speak(voz);
 }
 
 function activar() {
-  const prueba = window.SpeechRecognition || window.webkitSpeechRecognition;
-alert(prueba ? "VOZ DISPONIBLE" : "VOZ NO DISPONIBLE");
-  const Reconocimiento =
-    window.SpeechRecognition || alert(typeof Reconocimiento);
-    window.webkitSpeechRecognition;
-  const estado = document.getElementById("status");
-  const respuesta = document.getElementById("respuesta");
-
-  if (!Reconocimiento) {
-    estado.textContent = "Reconocimiento no disponible";
+  if (!SpeechRecognition) {
+    estado.textContent =
+      "Este navegador no permite reconocimiento de voz.";
     return;
   }
 
-  const reconocimiento = new Reconocimiento();
+  if (escuchando) {
+    estado.textContent = "ZAREK ya está escuchando.";
+    return;
+  }
+
+  reconocimiento = new SpeechRecognition();
 
   reconocimiento.lang = "es-ES";
   reconocimiento.continuous = false;
-  reconocimiento.interimResults = true;
+  reconocimiento.interimResults = false;
   reconocimiento.maxAlternatives = 1;
 
   respuesta.textContent = "";
+  escuchando = true;
 
   reconocimiento.onstart = function() {
     estado.textContent = "ZAREK está escuchando...";
   };
 
   reconocimiento.onresult = function(event) {
-    let texto = "";
-
-    for (let i = event.resultIndex; i < event.results.length; i++) {
-      texto += event.results[i][0].transcript;
-    }
+    const texto =
+      event.results[0][0].transcript.trim();
 
     respuesta.textContent = "Tú: " + texto;
 
-    if (event.results[event.results.length - 1].isFinal) {
-      const mensaje = texto.toLowerCase();
+    const mensaje = texto.toLowerCase();
+    let contestacion = "Te escucho. ¿Qué necesitas?";
 
-      let contestacion = "Te escucho. ¿Qué necesitas?";
-
-      if (mensaje.includes("hola")) {
-        contestacion = "Hola. Soy Zarek. Estoy listo para ayudarte.";
-      } else if (mensaje.includes("cómo estás")) {
-        contestacion = "Funcionando correctamente. ¿Qué hacemos hoy?";
-      } else if (mensaje.includes("tu nombre")) {
-        contestacion = "Soy Zarek, tu asistente inteligente.";
-      } else if (mensaje.includes("adiós")) {
-        contestacion = "Hasta pronto. Zarek queda en espera.";
-      }
-
-      respuesta.textContent = "ZAREK: " + contestacion;
-      estado.textContent = "ZAREK respondió.";
-      hablar(contestacion);
+    if (mensaje.includes("hola")) {
+      contestacion =
+        "Hola. Soy Zarek. Estoy listo para ayudarte.";
+    } else if (mensaje.includes("cómo estás")) {
+      contestacion =
+        "Funcionando correctamente. ¿Qué hacemos hoy?";
+    } else if (mensaje.includes("tu nombre")) {
+      contestacion =
+        "Soy Zarek, tu asistente inteligente.";
+    } else if (mensaje.includes("adiós")) {
+      contestacion =
+        "Hasta pronto. Zarek queda en espera.";
     }
+
+    respuesta.textContent = "ZAREK: " + contestacion;
+    estado.textContent = "ZAREK respondió.";
+
+    hablar(contestacion);
   };
 
   reconocimiento.onerror = function(event) {
+    escuchando = false;
     estado.textContent = "Error de voz: " + event.error;
   };
 
@@ -130,15 +145,20 @@ alert(prueba ? "VOZ DISPONIBLE" : "VOZ NO DISPONIBLE");
   };
 
   reconocimiento.onend = function() {
+    escuchando = false;
+
     if (estado.textContent === "ZAREK está escuchando...") {
-      estado.textContent = "No recibí una respuesta. Inténtalo otra vez.";
+      estado.textContent =
+        "No recibí palabras. Inténtalo otra vez.";
     }
   };
 
   try {
     reconocimiento.start();
   } catch (error) {
-    estado.textContent = "No se pudo iniciar el micrófono.";
+    escuchando = false;
+    estado.textContent =
+      "No se pudo iniciar: " + error.message;
   }
 }
 </script>
