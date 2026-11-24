@@ -67,6 +67,7 @@ function hablar(texto) {
 function activar() {
   const Reconocimiento =
     window.SpeechRecognition ||
+    alert(typeof Reconocimiento);
     window.webkitSpeechRecognition;
 
   const estado = document.getElementById("status");
