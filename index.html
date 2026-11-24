@@ -56,6 +56,8 @@ button {
 
 <script>
 function hablar(texto) {
+  speechSynthesis.cancel();
+
   const voz = new SpeechSynthesisUtterance(texto);
   voz.lang = "es-ES";
   voz.rate = 0.95;
@@ -67,59 +69,75 @@ function activar() {
     window.SpeechRecognition ||
     window.webkitSpeechRecognition;
 
+  const estado = document.getElementById("status");
+  const respuesta = document.getElementById("respuesta");
+
   if (!Reconocimiento) {
-    document.getElementById("status").textContent =
-      "Reconocimiento de voz no disponible en este navegador.";
-    hablar("Hola. Soy Zarek. Mi sistema de voz necesita un navegador compatible.");
+    estado.textContent = "Reconocimiento no disponible";
     return;
   }
 
   const reconocimiento = new Reconocimiento();
+
   reconocimiento.lang = "es-ES";
-  reconocimiento.interimResults = false;
+  reconocimiento.continuous = false;
+  reconocimiento.interimResults = true;
+  reconocimiento.maxAlternatives = 1;
 
-  document.getElementById("status").textContent =
-    "ZAREK está escuchando...";
+  respuesta.textContent = "";
 
-  reconocimiento.onresult = function(event) {
-    const texto = event.results[0][0].transcript.toLowerCase();
-
-    document.getElementById("respuesta").textContent =
-      "Tú: " + texto;
-
-    let respuesta = "Te escucho. Todavía estoy aprendiendo.";
-
-    if (texto.includes("hola")) {
-      respuesta = "Hola. Soy Zarek. ¿En qué puedo ayudarte?";
-    } else if (texto.includes("cómo estás")) {
-      respuesta = "Funcionando al cien por ciento. ¿Y tú?";
-    } else if (texto.includes("tu nombre")) {
-      respuesta = "Mi nombre es Zarek, tu asistente inteligente.";
-    } else if (texto.includes("adiós")) {
-      respuesta = "Hasta pronto. Zarek queda en espera.";
-    }
-
-    document.getElementById("respuesta").textContent =
-      "ZAREK: " + respuesta;
-
-    document.getElementById("status").textContent =
-      "Respuesta completada.";
-
-    hablar(respuesta);
+  reconocimiento.onstart = function() {
+    estado.textContent = "ZAREK está escuchando...";
   };
 
-  reconocimiento.onerror = function() {
-    document.getElementById("status").textContent =
-      "No pude escucharte. Inténtalo otra vez.";
+  reconocimiento.onresult = function(event) {
+    let texto = "";
+
+    for (let i = event.resultIndex; i < event.results.length; i++) {
+      texto += event.results[i][0].transcript;
+    }
+
+    respuesta.textContent = "Tú: " + texto;
+
+    if (event.results[event.results.length - 1].isFinal) {
+      const mensaje = texto.toLowerCase();
+
+      let contestacion = "Te escucho. ¿Qué necesitas?";
+
+      if (mensaje.includes("hola")) {
+        contestacion = "Hola. Soy Zarek. Estoy listo para ayudarte.";
+      } else if (mensaje.includes("cómo estás")) {
+        contestacion = "Funcionando correctamente. ¿Qué hacemos hoy?";
+      } else if (mensaje.includes("tu nombre")) {
+        contestacion = "Soy Zarek, tu asistente inteligente.";
+      } else if (mensaje.includes("adiós")) {
+        contestacion = "Hasta pronto. Zarek queda en espera.";
+      }
+
+      respuesta.textContent = "ZAREK: " + contestacion;
+      estado.textContent = "ZAREK respondió.";
+      hablar(contestacion);
+    }
+  };
+
+  reconocimiento.onerror = function(event) {
+    estado.textContent = "Error de voz: " + event.error;
+  };
+
+  reconocimiento.onnomatch = function() {
+    estado.textContent = "No pude reconocer tus palabras.";
   };
 
   reconocimiento.onend = function() {
-    document.getElementById("status").textContent =
-      "Sistema en espera...";
+    if (estado.textContent === "ZAREK está escuchando...") {
+      estado.textContent = "No recibí una respuesta. Inténtalo otra vez.";
+    }
   };
 
-  reconocimiento.start();
+  try {
+    reconocimiento.start();
+  } catch (error) {
+    estado.textContent = "No se pudo iniciar el micrófono.";
+  }
 }
 </script>
-</body>
-</html>
